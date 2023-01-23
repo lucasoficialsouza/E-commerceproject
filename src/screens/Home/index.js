@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plataform } from 'react-native'
+import { Plataform, RefreshControl } from 'react-native'
 import { useNavigation } from '@react-navigation/native';
 import { resquest, PERMISSIONS } from 'react-native-permissions';
 import Geolocation from "@react-native-community/geolocation";
@@ -32,12 +32,13 @@ export default () => {
     const navigation = useNavigation();
 
     const [locationText, setLocationText] = useState('');
-    const [coords, setCoods] = useState(null);
+    const [coords, setCoords] = useState(null);
     const [loading, setLoading] = useState(false);
     const [list, setList] = useState([]);
+    const [refreshing, setRefreshing] = useState(false);
 
     const handleLocationfinder = async () => {
-        setCoods(null);
+        setCoords(null);
         let result = await request(
             Plataform.OS === 'ios' ?
                 PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
@@ -52,10 +53,9 @@ export default () => {
                 setList([]);
 
                 Geolocation.getCurrentPosition((info)=>{
-                    setCoods(info.coords);
+                    setCoords(info.coords);
                     getBarbers();
                 });
-
         }
     }
 
@@ -63,7 +63,14 @@ export default () => {
         setLoading(true);
         setList([]);
 
-        let res = await Api.getBarbers();
+        let lat = null;
+        let lng = null;
+        if(coords) {
+            lat = coords.latitude;
+            lng = coords.longitude;
+        }
+
+        let res = await Api.getBarbers(lat, lng, locationText);
         console.log(res);
         if(res.error == '') {
                 if(res.loc){
@@ -80,9 +87,22 @@ export default () => {
     useEffect( ()=>{
         getBarbers();
     }, []);
+
+    const onRefresh = () => {
+        setRefreshing(false);
+        getBarbers();
+    }
+
+    const handleLocationSearch = () =>{
+        setRefreshing(false);
+        getBarbers({});
+        getBarbers();
+    }
     return (
         <Container>
-            <Scroller>
+            <Scroller refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh}></RefreshControl>
+            }>
 
                <HeaderArea>
                     <HeaderTitle numberOfLines={2}>Encontre seu barbeiro favorito</HeaderTitle>
@@ -97,6 +117,7 @@ export default () => {
                         placeholderTextColor='#FFFFFF'
                         value={locationText}
                         onChangeText={t=>setLocationText(t)}
+                        onEndEditing={handleLocationSearch}
                     />
                         
                     <LocationFinder onPress={handleLocationfinder}>

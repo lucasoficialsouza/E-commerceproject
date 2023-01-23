@@ -18,6 +18,5 @@ export default () => (
         <Tab.Screen  nome='Appointments' component={Appointments}/>
         <Tab.Screen  nome='Favorites' component={Favorites}/>
         <Tab.Screen  nome='Profile' component={Profile}/>
-        <Tab.Screen  nome='MainTab' component={MainTab}/>
     </Tab.Navigator>
 );
